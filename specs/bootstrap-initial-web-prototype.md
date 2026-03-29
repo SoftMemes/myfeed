@@ -1,7 +1,7 @@
 # Bootstrap Initial Web Prototype Specification
 
 > **Version**: 1.1 (March 2026)
-> **Status**: Ready for Implementation
+> **Status**: Implemented
 > **Last Updated**: 2026-03-29
 
 ---
@@ -201,7 +201,7 @@ Data is serialized as JSON. No versioning or migration strategy in this prototyp
 ## Key Files (expected)
 
 ```
-web/
+web/src/
 ├── app/
 │   ├── page.tsx                  # Feed page
 │   ├── subscriptions/page.tsx    # Subscriptions page
@@ -214,7 +214,31 @@ web/
 │   └── mock-data.ts              # Mock channel catalogue and FeedItem generators
 └── components/
     ├── feed-item-card.tsx
-    ├── subscription-row.tsx
-    ├── source-row.tsx
+    ├── nav-bar.tsx
+    ├── seed-provider.tsx
     └── add-subscription-dialog.tsx
 ```
+
+## Implementation Notes
+
+**Implemented**: March 2026
+
+**Key Changes**:
+- `src/lib/domain.ts` — Source, Subscription, FeedItem, MockChannel interfaces
+- `src/lib/storage.ts` — localStorage read/write helpers (myfeed: namespace)
+- `src/lib/mock-data.ts` — 10 fictional YouTube channels, each with 15 video titles; generateFeedItems, searchMockChannels
+- `src/lib/seed.ts` — seedIfEmpty, resetData, addSubscriptionWithItems
+- `src/app/layout.tsx` — NavBar + SeedProvider wrapper
+- `src/app/page.tsx` — Feed with 3-col grid, load more, empty states
+- `src/app/subscriptions/page.tsx` — Subscription list + AddSubscriptionDialog
+- `src/app/sources/page.tsx` — Source toggles + reset button
+- `src/components/feed-item-card.tsx` — Thumbnail card linking out in new tab
+- `src/components/add-subscription-dialog.tsx` — Search + subscribe dialog
+- `src/components/nav-bar.tsx` — Top nav bar
+- `src/components/seed-provider.tsx` — Client-side seed on mount
+- `public/youtube.svg` — YouTube logo
+
+**Notes**:
+- Uses shadcn v4 (base-ui under the hood) which uses `render` prop instead of `asChild` — DialogTrigger and Button composition updated accordingly
+- Tailwind v4 CSS-first config (no tailwind.config.js)
+- All mock data uses fictional channel/video names; thumbnails via picsum.photos

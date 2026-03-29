@@ -1,7 +1,7 @@
 # Bootstrap Basic Contracts Specification
 
 > **Version**: 2.0 (March 2026)
-> **Status**: Ready for Implementation
+> **Status**: Implemented
 > **Last Updated**: 2026-03-29
 
 ## Description
@@ -135,3 +135,18 @@ Import `google/rpc/error_details.proto` and `google/rpc/status.proto` where need
 2. `cd contracts && buf format -d` — zero diff
 3. Manually review that `SearchSubscribables` is declared `server_streaming` in the proto
 4. Confirm no `user_id` fields appear anywhere in request or response messages
+
+---
+
+## Implementation Notes
+
+**Implemented**: March 2026
+
+**Key files modified**:
+- `contracts/com/softmemes/myfeed/v1/common.proto` — removed `SourceType` enum
+- `contracts/com/softmemes/myfeed/v1/sources.proto` — replaced with `Source` + `Subscribable` messages; no service
+- `contracts/com/softmemes/myfeed/v1/subscriptions.proto` — replaced with new `Subscription` message and `SubscriptionService` (7 RPCs including server-streaming `SearchSubscribables`)
+- `contracts/com/softmemes/myfeed/v1/feed.proto` — replaced with new `FeedItem` message and `FeedService` (`GetFeed` with source/subscription/date filters)
+- `contracts/com/softmemes/myfeed/v1/users.proto` — unchanged
+
+**Deviations from spec**: None. `buf lint` and `buf format -d` both pass clean.
