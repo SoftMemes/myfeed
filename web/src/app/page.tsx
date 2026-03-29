@@ -1,31 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FeedItemCard } from "@/components/feed-item-card";
 import { trpc } from "@/trpc/client";
+import type { FeedItem } from "@/lib/domain";
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function FeedPage() {
-  const [pageToken, setPageToken] = useState<string | undefined>(undefined);
-  const [allItems, setAllItems] = useState<
-    { id: string; subscriptionId: string; sourceId: string; platformType: string; title: string; description: string; url: string; imageUrl: string; publishedAt: string }[]
-  >([]);
+  const [pageTokens, setPageTokens] = useState<string[]>([""]);
+  const [allItems, setAllItems] = useState<FeedItem[]>([]);
+  const currentToken = pageTokens[pageTokens.length - 1];
 
   const { data: subscriptionsData } = trpc.subscriptions.list.useQuery({});
 
-  const { data, isLoading, error, refetch } = trpc.feed.getFeed.useQuery(
-    { pageToken },
-    {
-      onSuccess: (result) => {
-        if (pageToken) {
-          setAllItems((prev) => [...prev, ...result.items]);
-        } else {
-          setAllItems(result.items);
-        }
-      },
+  const { data, isLoading, error, refetch } = trpc.feed.getFeed.useQuery({
+    pageToken: currentToken || undefined,
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    if (pageTokens.length === 1) {
+      setAllItems(data.items);
+    } else {
+      setAllItems((prev) => {
+        const ids = new Set(prev.map((i) => i.id));
+        return [...prev, ...data.items.filter((i) => !ids.has(i.id))];
+      });
     }
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const subscriptionMap = new Map(
     (subscriptionsData?.subscriptions ?? []).map((s) => [s.id, s])
@@ -78,6 +82,12 @@ export default function FeedPage() {
 
   const hasMore = !!data?.nextPageToken;
 
+  function loadMore() {
+    if (data?.nextPageToken) {
+      setPageTokens((prev) => [...prev, data.nextPageToken]);
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -95,7 +105,7 @@ export default function FeedPage() {
         <div className="mt-8 flex justify-center">
           <Button
             variant="outline"
-            onClick={() => setPageToken(data?.nextPageToken)}
+            onClick={loadMore}
             disabled={isLoading}
           >
             {isLoading ? "Loading…" : "Load more"}

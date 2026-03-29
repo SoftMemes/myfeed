@@ -3,6 +3,13 @@ import { observable } from "@trpc/server/observable";
 import { router, publicProcedure } from "../trpc";
 import { subscriptionClient } from "../grpc";
 import type { Source, Subscribable } from "@/lib/domain";
+import {
+  ListSourcesRequest,
+  CreateSourceRequest,
+  DeleteSourceRequest,
+  SearchSubscribablesRequest,
+} from "../../../generated/proto/com/softmemes/myfeed/v1/subscriptions";
+import { PageRequest } from "../../../generated/proto/com/softmemes/myfeed/v1/common";
 
 function toSource(s: {
   id: string;
@@ -22,9 +29,14 @@ export const sourcesRouter = router({
   list: publicProcedure
     .input(z.object({ pageToken: z.string().optional() }))
     .query(async ({ input }) => {
-      const response = await subscriptionClient.listSources({
-        page: { pageSize: 100, pageToken: input.pageToken ?? "" },
-      });
+      const response = await subscriptionClient.listSources(
+        ListSourcesRequest.fromPartial({
+          page: PageRequest.fromPartial({
+            pageSize: 100,
+            pageToken: input.pageToken ?? "",
+          }),
+        })
+      );
 
       return {
         sources: response.sources.map(toSource),
@@ -40,7 +52,9 @@ export const sourcesRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const response = await subscriptionClient.createSource(input);
+      const response = await subscriptionClient.createSource(
+        CreateSourceRequest.fromPartial(input)
+      );
       if (!response.source) {
         throw new Error("No source returned");
       }
@@ -50,7 +64,9 @@ export const sourcesRouter = router({
   delete: publicProcedure
     .input(z.object({ sourceId: z.string() }))
     .mutation(async ({ input }) => {
-      await subscriptionClient.deleteSource(input);
+      await subscriptionClient.deleteSource(
+        DeleteSourceRequest.fromPartial(input)
+      );
     }),
 
   searchSubscribables: publicProcedure
@@ -60,7 +76,9 @@ export const sourcesRouter = router({
         let cancelled = false;
 
         async function run() {
-          const stream = subscriptionClient.searchSubscribables(input);
+          const stream = subscriptionClient.searchSubscribables(
+            SearchSubscribablesRequest.fromPartial(input)
+          );
           for await (const response of stream) {
             if (cancelled) break;
             if (response.subscribable) {
