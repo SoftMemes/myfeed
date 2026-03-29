@@ -6,14 +6,6 @@ option java_multiple_files = true;
 option java_outer_classname = "CommonProto";
 option java_package = "com.softmemes.myfeed.v1";
 
-// SourceType identifies the kind of content source.
-enum SourceType {
-  SOURCE_TYPE_UNSPECIFIED = 0;
-  SOURCE_TYPE_YOUTUBE_CHANNEL = 1;
-  SOURCE_TYPE_PODCAST = 2;
-  SOURCE_TYPE_RSS_FEED = 3;
-}
-
 // PageRequest is used for cursor-based pagination in list RPCs.
 message PageRequest {
   // Maximum number of items to return.

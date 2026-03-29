@@ -9,13 +9,16 @@ option java_multiple_files = true;
 option java_outer_classname = "FeedProto";
 option java_package = "com.softmemes.myfeed.v1";
 
-// FeedItem represents a single piece of content from a followed source.
-// Consumption happens on the original platform; myfeed surfaces a preview and link.
+// FeedItem is a single piece of content surfaced in the user's feed.
+// It is produced by a Subscription and links back to both the Source and the
+// Subscription that generated it. Consumption happens on the original platform;
+// myfeed surfaces a preview and link only.
+// platform_type mirrors Source.platform_type (e.g. "youtube", "rss").
 message FeedItem {
   string id = 1;
   string source_id = 2;
-  string source_name = 3;
-  SourceType source_type = 4;
+  string subscription_id = 3;
+  string platform_type = 4;
   string title = 5;
   string description = 6;
   // URL to the content on the original platform.
@@ -24,31 +27,27 @@ message FeedItem {
   google.protobuf.Timestamp published_at = 9;
 }
 
-// FeedService is the primary read surface for the authenticated user's feed.
+// FeedService is the read-only surface for the authenticated user's feed.
 // All RPCs require a valid Firebase Auth token in gRPC metadata.
 service FeedService {
-  // GetFeed returns the user's chronological feed of content from followed sources.
-  // Items are returned in reverse-chronological order (newest first).
+  // GetFeed returns the user's feed in reverse-chronological order.
+  // All filter fields are optional; omitting them returns the full feed.
   rpc GetFeed(GetFeedRequest) returns (GetFeedResponse) {}
-  // GetFeedItem fetches a single feed item by ID.
-  rpc GetFeedItem(GetFeedItemRequest) returns (GetFeedItemResponse) {}
 }
 
 message GetFeedRequest {
   PageRequest page = 1;
-  // Optionally filter to a single source.
+  // Filter to a specific source connection.
   string source_id = 2;
+  // Filter to a specific subscription (e.g. one channel).
+  string subscription_id = 3;
+  // Return only items published after this timestamp.
+  google.protobuf.Timestamp after = 4;
+  // Return only items published before this timestamp.
+  google.protobuf.Timestamp before = 5;
 }
 
 message GetFeedResponse {
   repeated FeedItem items = 1;
   PageResponse page = 2;
-}
-
-message GetFeedItemRequest {
-  string item_id = 1;
-}
-
-message GetFeedItemResponse {
-  FeedItem item = 1;
 }

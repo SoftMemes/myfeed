@@ -3,48 +3,115 @@ syntax = "proto3";
 package com.softmemes.myfeed.v1;
 
 import "com/softmemes/myfeed/v1/common.proto";
+import "com/softmemes/myfeed/v1/sources.proto";
 import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "SubscriptionsProto";
 option java_package = "com.softmemes.myfeed.v1";
 
-// Subscription records that the authenticated user follows a given source.
+// Subscription is a specific thing the user follows within a Source — e.g. a
+// YouTube channel, a podcast, or a keyword filter. external_id is the
+// platform's own identifier for the subscribed item.
+// User identity is never in the message — it comes from the Firebase Auth token
+// passed as gRPC metadata.
 message Subscription {
   string id = 1;
-  // Derived server-side from the auth token; not supplied by the client.
-  string user_id = 2;
-  string source_id = 3;
-  google.protobuf.Timestamp created_at = 4;
+  string source_id = 2;
+  string external_id = 3;
+  string display_name = 4;
+  string description = 5;
+  string image_url = 6;
+  google.protobuf.Timestamp created_at = 7;
 }
 
-// SubscriptionService manages which sources the authenticated user follows.
+// SubscriptionService manages the authenticated user's sources and subscriptions.
 // All RPCs require a valid Firebase Auth token in gRPC metadata.
 service SubscriptionService {
-  // Subscribe adds a source to the user's followed sources.
-  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
-  // Unsubscribe removes a source from the user's followed sources.
-  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
-  // ListSubscriptions returns all sources the user currently follows.
+  // --- Source management ---
+
+  // CreateSource adds a new platform connection for the user.
+  rpc CreateSource(CreateSourceRequest) returns (CreateSourceResponse) {}
+  // DeleteSource removes a source and cascades to delete all its subscriptions.
+  rpc DeleteSource(DeleteSourceRequest) returns (DeleteSourceResponse) {}
+  // ListSources returns all platform connections for the authenticated user.
+  rpc ListSources(ListSourcesRequest) returns (ListSourcesResponse) {}
+
+  // --- Subscription management ---
+
+  // SearchSubscribables searches for things to subscribe to within a source.
+  // Results are streamed individually as they arrive from the platform API.
+  rpc SearchSubscribables(SearchSubscribablesRequest) returns (stream SearchSubscribablesResponse) {}
+  // AddSubscription subscribes the user to a specific item within a source.
+  rpc AddSubscription(AddSubscriptionRequest) returns (AddSubscriptionResponse) {}
+  // RemoveSubscription removes a specific subscription.
+  rpc RemoveSubscription(RemoveSubscriptionRequest) returns (RemoveSubscriptionResponse) {}
+  // ListSubscriptions returns the user's subscriptions, optionally filtered by source.
   rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse) {}
 }
 
-message SubscribeRequest {
+// --- Source RPCs ---
+
+message CreateSourceRequest {
+  // Free-form platform identifier, e.g. "youtube", "netflix", "rss".
+  string platform_type = 1;
+  string display_name = 2;
+}
+
+message CreateSourceResponse {
+  Source source = 1;
+}
+
+message DeleteSourceRequest {
   string source_id = 1;
 }
 
-message SubscribeResponse {
+message DeleteSourceResponse {}
+
+message ListSourcesRequest {
+  PageRequest page = 1;
+}
+
+message ListSourcesResponse {
+  repeated Source sources = 1;
+  PageResponse page = 2;
+}
+
+// --- Subscription RPCs ---
+
+message SearchSubscribablesRequest {
+  string source_id = 1;
+  string query = 2;
+}
+
+// One SearchSubscribablesResponse is streamed per result.
+message SearchSubscribablesResponse {
+  Subscribable subscribable = 1;
+}
+
+message AddSubscriptionRequest {
+  string source_id = 1;
+  // external_id identifies the item on the platform (e.g. a YouTube channel ID).
+  string external_id = 2;
+  string display_name = 3;
+  string description = 4;
+  string image_url = 5;
+}
+
+message AddSubscriptionResponse {
   Subscription subscription = 1;
 }
 
-message UnsubscribeRequest {
-  string source_id = 1;
+message RemoveSubscriptionRequest {
+  string subscription_id = 1;
 }
 
-message UnsubscribeResponse {}
+message RemoveSubscriptionResponse {}
 
 message ListSubscriptionsRequest {
-  PageRequest page = 1;
+  // Optionally filter to subscriptions under a specific source.
+  string source_id = 1;
+  PageRequest page = 2;
 }
 
 message ListSubscriptionsResponse {
