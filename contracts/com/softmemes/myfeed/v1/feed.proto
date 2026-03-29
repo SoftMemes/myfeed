@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package com.softmemes.myfeed.v1;
+
+import "com/softmemes/myfeed/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "FeedProto";
+option java_package = "com.softmemes.myfeed.v1";
+
+// FeedItem represents a single piece of content from a followed source.
+// Consumption happens on the original platform; myfeed surfaces a preview and link.
+message FeedItem {
+  string id = 1;
+  string source_id = 2;
+  string source_name = 3;
+  SourceType source_type = 4;
+  string title = 5;
+  string description = 6;
+  // URL to the content on the original platform.
+  string url = 7;
+  string image_url = 8;
+  google.protobuf.Timestamp published_at = 9;
+}
+
+// FeedService is the primary read surface for the authenticated user's feed.
+// All RPCs require a valid Firebase Auth token in gRPC metadata.
+service FeedService {
+  // GetFeed returns the user's chronological feed of content from followed sources.
+  // Items are returned in reverse-chronological order (newest first).
+  rpc GetFeed(GetFeedRequest) returns (GetFeedResponse) {}
+  // GetFeedItem fetches a single feed item by ID.
+  rpc GetFeedItem(GetFeedItemRequest) returns (GetFeedItemResponse) {}
+}
+
+message GetFeedRequest {
+  PageRequest page = 1;
+  // Optionally filter to a single source.
+  string source_id = 2;
+}
+
+message GetFeedResponse {
+  repeated FeedItem items = 1;
+  PageResponse page = 2;
+}
+
+message GetFeedItemRequest {
+  string item_id = 1;
+}
+
+message GetFeedItemResponse {
+  FeedItem item = 1;
+}

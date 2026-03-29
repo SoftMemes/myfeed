@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package com.softmemes.myfeed.v1;
+
+import "com/softmemes/myfeed/v1/common.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "SourcesProto";
+option java_package = "com.softmemes.myfeed.v1";
+
+// Source represents a content source that a user can subscribe to
+// (e.g., a YouTube channel, podcast feed, or RSS source).
+message Source {
+  string id = 1;
+  string name = 2;
+  SourceType type = 3;
+  string description = 4;
+  // Canonical URL of the source (channel page, podcast page, etc.)
+  string url = 5;
+  string image_url = 6;
+}
+
+// SourceService allows clients to discover content sources.
+service SourceService {
+  // SearchSources searches for sources by name or keyword.
+  rpc SearchSources(SearchSourcesRequest) returns (SearchSourcesResponse) {}
+  // GetSource fetches a single source by ID.
+  rpc GetSource(GetSourceRequest) returns (GetSourceResponse) {}
+}
+
+message SearchSourcesRequest {
+  string query = 1;
+  // Optionally filter by source type.
+  SourceType type = 2;
+  PageRequest page = 3;
+}
+
+message SearchSourcesResponse {
+  repeated Source sources = 1;
+  PageResponse page = 2;
+}
+
+message GetSourceRequest {
+  string source_id = 1;
+}
+
+message GetSourceResponse {
+  Source source = 1;
+}

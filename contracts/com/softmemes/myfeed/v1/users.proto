@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package com.softmemes.myfeed.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "UsersProto";
+option java_package = "com.softmemes.myfeed.v1";
+
+// UserProfile is the myfeed representation of an authenticated user.
+// Identity is managed by Firebase Auth; user_id corresponds to the Firebase UID.
+// Auth tokens are passed as gRPC metadata, not in request messages.
+message UserProfile {
+  // Firebase UID.
+  string user_id = 1;
+  string display_name = 2;
+  google.protobuf.Timestamp created_at = 3;
+}

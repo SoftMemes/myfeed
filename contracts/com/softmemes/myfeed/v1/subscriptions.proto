@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package com.softmemes.myfeed.v1;
+
+import "com/softmemes/myfeed/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "SubscriptionsProto";
+option java_package = "com.softmemes.myfeed.v1";
+
+// Subscription records that the authenticated user follows a given source.
+message Subscription {
+  string id = 1;
+  // Derived server-side from the auth token; not supplied by the client.
+  string user_id = 2;
+  string source_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// SubscriptionService manages which sources the authenticated user follows.
+// All RPCs require a valid Firebase Auth token in gRPC metadata.
+service SubscriptionService {
+  // Subscribe adds a source to the user's followed sources.
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+  // Unsubscribe removes a source from the user's followed sources.
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+  // ListSubscriptions returns all sources the user currently follows.
+  rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse) {}
+}
+
+message SubscribeRequest {
+  string source_id = 1;
+}
+
+message SubscribeResponse {
+  Subscription subscription = 1;
+}
+
+message UnsubscribeRequest {
+  string source_id = 1;
+}
+
+message UnsubscribeResponse {}
+
+message ListSubscriptionsRequest {
+  PageRequest page = 1;
+}
+
+message ListSubscriptionsResponse {
+  repeated Subscription subscriptions = 1;
+  PageResponse page = 2;
+}

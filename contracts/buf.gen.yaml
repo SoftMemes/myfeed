@@ -1,0 +1,21 @@
+version: v2
+clean: true
+plugins:
+  # TypeScript — web client (Next.js)
+  - local: protoc-gen-es
+    out: ../web/generated/proto
+    opt:
+      - target=ts
+
+  # Dart — mobile client (Flutter)
+  - local: protoc-gen-dart
+    out: ../app/lib/generated/proto
+    opt:
+      - grpc
+
+  # Rust — backend services
+  # Not generated via buf; tonic-build in services/*/build.rs reads protos directly.
+  # See services/api/build.rs for the tonic-build configuration.
+
+inputs:
+  - directory: .
