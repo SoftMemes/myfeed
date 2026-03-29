@@ -2,12 +2,6 @@ import { z } from "zod";
 import { router, publicProcedure } from "../trpc";
 import { subscriptionClient } from "../grpc";
 import type { Subscription } from "@/lib/domain";
-import {
-  ListSubscriptionsRequest,
-  AddSubscriptionRequest,
-  RemoveSubscriptionRequest,
-} from "../../../generated/proto/com/softmemes/myfeed/v1/subscriptions";
-import { PageRequest } from "../../../generated/proto/com/softmemes/myfeed/v1/common";
 
 function toSubscription(s: {
   id: string;
@@ -38,15 +32,10 @@ export const subscriptionsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const response = await subscriptionClient.listSubscriptions(
-        ListSubscriptionsRequest.fromPartial({
-          sourceId: input.sourceId ?? "",
-          page: PageRequest.fromPartial({
-            pageSize: 100,
-            pageToken: input.pageToken ?? "",
-          }),
-        })
-      );
+      const response = await subscriptionClient.listSubscriptions({
+        sourceId: input.sourceId ?? "",
+        page: { pageSize: 100, pageToken: input.pageToken ?? "" },
+      });
 
       return {
         subscriptions: response.subscriptions.map(toSubscription),
@@ -65,9 +54,7 @@ export const subscriptionsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const response = await subscriptionClient.addSubscription(
-        AddSubscriptionRequest.fromPartial(input)
-      );
+      const response = await subscriptionClient.addSubscription(input);
       if (!response.subscription) {
         throw new Error("No subscription returned");
       }
@@ -77,8 +64,6 @@ export const subscriptionsRouter = router({
   remove: publicProcedure
     .input(z.object({ subscriptionId: z.string() }))
     .mutation(async ({ input }) => {
-      await subscriptionClient.removeSubscription(
-        RemoveSubscriptionRequest.fromPartial(input)
-      );
+      await subscriptionClient.removeSubscription(input);
     }),
 });

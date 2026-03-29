@@ -2,8 +2,6 @@ import { z } from "zod";
 import { router, publicProcedure } from "../trpc";
 import { feedClient } from "../grpc";
 import type { FeedItem } from "@/lib/domain";
-import { GetFeedRequest } from "../../../generated/proto/com/softmemes/myfeed/v1/feed";
-import { PageRequest } from "../../../generated/proto/com/softmemes/myfeed/v1/common";
 
 function toFeedItem(item: {
   id: string;
@@ -40,16 +38,14 @@ export const feedRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const response = await feedClient.getFeed(
-        GetFeedRequest.fromPartial({
-          page: PageRequest.fromPartial({
-            pageSize: input.pageSize ?? 20,
-            pageToken: input.pageToken ?? "",
-          }),
-          sourceId: input.sourceId ?? "",
-          subscriptionId: input.subscriptionId ?? "",
-        })
-      );
+      const response = await feedClient.getFeed({
+        page: {
+          pageSize: input.pageSize ?? 20,
+          pageToken: input.pageToken ?? "",
+        },
+        sourceId: input.sourceId ?? "",
+        subscriptionId: input.subscriptionId ?? "",
+      });
 
       return {
         items: response.items.map(toFeedItem),
