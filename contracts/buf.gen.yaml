@@ -1,11 +1,16 @@
 version: v2
 clean: true
 plugins:
-  # TypeScript — web client (Next.js)
-  - local: protoc-gen-es
+  # TypeScript — web client (Next.js) via ts-proto for nice-grpc compatibility
+  - local: protoc-gen-ts_proto
     out: ../web/generated/proto
     opt:
-      - target=ts
+      - outputServices=nice-grpc
+      - outputServices=generic-definitions
+      - esModuleInterop=true
+      - env=node
+      - useOptionals=messages
+      - useDate=string
 
   # Dart — mobile client (Flutter)
   - local: protoc-gen-dart

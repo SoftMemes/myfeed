@@ -1,35 +1,35 @@
 export interface Source {
   id: string;
-  name: string;
-  enabled: boolean;
-  iconUrl?: string;
+  platformType: string;
+  displayName: string;
+  createdAt: string;
 }
 
 export interface Subscription {
   id: string;
   sourceId: string;
-  publisherName: string;
-  publisherAvatarUrl?: string;
-  publisherDescription?: string;
-  subscribedAt: string;
+  externalId: string;
+  displayName: string;
+  description: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
+export interface Subscribable {
+  externalId: string;
+  displayName: string;
+  description: string;
+  imageUrl: string;
 }
 
 export interface FeedItem {
   id: string;
-  subscriptionId: string;
   sourceId: string;
+  subscriptionId: string;
+  platformType: string;
   title: string;
   description: string;
-  thumbnailUrl: string;
   url: string;
+  imageUrl: string;
   publishedAt: string;
-  contentType: "video" | "podcast_episode" | "article" | "episode" | "post";
-}
-
-export interface MockChannel {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  description: string;
-  videoTitles: string[];
 }
