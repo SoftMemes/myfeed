@@ -4,7 +4,13 @@ members = ["api"]
 
 [workspace.dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio-stream = "0.1"
 tonic = "0.12"
 tonic-health = "0.12"
+tonic-types = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

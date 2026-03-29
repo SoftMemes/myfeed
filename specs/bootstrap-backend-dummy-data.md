@@ -1,7 +1,7 @@
 # Bootstrap Backend Dummy Data Specification
 
 > **Version**: 2.0 (March 2026)
-> **Status**: Ready for Implementation
+> **Status**: Implemented
 > **Last Updated**: 2026-03-29
 
 ## Description
@@ -221,8 +221,8 @@ tonic-build = "0.12"
 
 ## Verification
 
-1. `cargo build -p api` — compiles cleanly including proto codegen
-2. `cargo run -p api` — server starts on configured port
+1. `cargo build -p myfeed-api` — compiles cleanly including proto codegen
+2. `cargo run -p myfeed-api` — server starts on configured port
 3. Use grpcurl or a gRPC client to:
    - `ListSources` → returns 2 seeded sources
    - `SearchSubscribables` on youtube source with `query: "fire"` → streams "Fireship" result
@@ -230,3 +230,26 @@ tonic-build = "0.12"
    - `DeleteSource` → cascades; `ListSubscriptions` for that source returns empty
    - `GetFeed` with `subscription_id` filter → returns only that subscription's items
    - `GetFeed` with `page_size: 2` → returns 2 items with a valid `next_page_token`
+
+---
+
+## Implementation Notes
+
+**Implemented**: March 2026
+
+**Key files created/modified**:
+- `services/Cargo.toml` — added `prost`, `prost-types`, `tonic-types`, `uuid`, `base64`, `tokio-stream` workspace deps
+- `services/api/Cargo.toml` — added all new deps + `tonic-build` build-dep
+- `services/api/build.rs` — tonic-build compiling 4 proto files from `../../contracts`
+- `services/api/src/proto.rs` — `tonic::include_proto!` for generated types
+- `services/api/src/error.rs` — helpers for `NOT_FOUND`, `ALREADY_EXISTS`, `INVALID_ARGUMENT` with `google.rpc.ErrorInfo`
+- `services/api/src/auth.rs` — auth check respecting `REQUIRE_AUTH=1` env var
+- `services/api/src/store/repository.rs` — `SourceRepository`, `SubscriptionRepository`, `FeedRepository` traits
+- `services/api/src/store/in_memory.rs` — `InMemoryStore` with seed data + mock catalog
+- `services/api/src/services/subscription_service.rs` — `SubscriptionServiceImpl` (7 RPCs)
+- `services/api/src/services/feed_service.rs` — `FeedServiceImpl` (1 RPC)
+- `services/api/src/main.rs` — wires store + both services into the tonic server
+
+**Deviations from spec**:
+- Repository trait methods use `fn -> impl Future + Send` syntax (rather than `async fn`) to satisfy tonic's `Send` requirements for multi-threaded runtime. Callers use `.await` identically.
+- `tonic_types::StatusExt::with_error_details` returns `tonic::Status` directly (not `Result`); `.unwrap_or_else` fallback was not needed.
