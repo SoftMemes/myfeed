@@ -272,3 +272,29 @@ Also: update `contracts/buf.gen.yaml` to add ts-proto plugin and re-run `buf gen
    - Add subscription dialog: select a source, type "fire", see "Fireship" stream in as a result, add it, see 3 new feed items
 5. Stop backend → each page shows inline error + retry
 6. Confirm no references to `localStorage`, `MOCK_CHANNELS`, `seedIfEmpty` remain in `web/src/`
+
+---
+
+## Implementation Notes
+
+**Implemented**: March 2026
+
+**Key files created/modified**:
+- `contracts/buf.gen.yaml` — replaced `protoc-gen-es` with `protoc-gen-ts_proto` using `outputServices=nice-grpc` + `outputServices=generic-definitions`
+- `web/generated/proto/` — ts-proto generated types + service definitions + nice-grpc client interfaces
+- `web/src/lib/domain.ts` — replaced with clean UI types (camelCase, string dates)
+- `web/src/server/grpc.ts` — nice-grpc channel + typed clients using generated `SubscriptionServiceClient`/`FeedServiceClient` interfaces
+- `web/src/server/trpc.ts` — tRPC v11 init
+- `web/src/server/routers/` — feed, subscriptions, sources routers; `_app.ts` root
+- `web/src/app/api/trpc/[trpc]/route.ts` — Next.js App Router tRPC handler
+- `web/src/trpc/client.ts` + `provider.tsx` — React Query + tRPC client with `splitLink` (SSE for subscriptions)
+- `web/src/app/layout.tsx` — replaced `SeedProvider` with `TRPCReactProvider`
+- `web/src/app/page.tsx`, `subscriptions/page.tsx`, `sources/page.tsx` — live gRPC data via tRPC hooks
+- `web/src/components/add-subscription-dialog.tsx` — source selector + streaming search via tRPC subscription
+- `web/src/components/feed-item-card.tsx` — `thumbnailUrl` → `imageUrl`
+- Deleted: `mock-data.ts`, `seed.ts`, `storage.ts`, `seed-provider.tsx`
+
+**Deviations from spec**:
+- Used `outputServices=generic-definitions` (instead of spec's `outputServices=nice-grpc-client`) — this is required to generate runtime `ServiceDefinition` objects for nice-grpc's `createClient`. Also set `outputServices=nice-grpc` in the same plugin to get typed `SubscriptionServiceClient`/`FeedServiceClient` interfaces.
+- Typed the exported gRPC clients as `SubscriptionServiceClient` / `FeedServiceClient` (from the generated nice-grpc interfaces) to avoid TypeScript `Exact<DeepPartial<T>>` constraint errors that arise from nice-grpc's inferred return type of `createClient`.
+- Feed page uses `useEffect` + accumulated state for load-more pagination (React Query v5 removed `onSuccess` callback).
