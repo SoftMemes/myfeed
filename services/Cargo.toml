@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["api"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tonic = "0.12"
+tonic-health = "0.12"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
