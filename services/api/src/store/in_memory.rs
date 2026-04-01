@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -6,7 +5,7 @@ use uuid::Uuid;
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 
 use crate::error::{already_exists, invalid_page_token, not_found};
-use crate::proto::{FeedItem, Source, Subscribable, Subscription};
+use crate::proto::{FeedItem, Source, Subscription};
 use super::repository::{FeedRepository, SourceRepository, SubscriptionRepository};
 
 // ---------------------------------------------------------------------------
@@ -54,7 +53,7 @@ fn paginate<T: Clone>(items: &[T], offset: usize, page_size: usize) -> (Vec<T>, 
 }
 
 // ---------------------------------------------------------------------------
-// Seed & catalog helpers
+// Seed helpers
 // ---------------------------------------------------------------------------
 
 fn make_source(id: &str, platform_type: &str, display_name: &str, days_ago: i64) -> Source {
@@ -110,69 +109,6 @@ fn make_feed_item(
     }
 }
 
-fn subscribable(external_id: &str, display_name: &str, description: &str) -> Subscribable {
-    Subscribable {
-        external_id: external_id.to_string(),
-        display_name: display_name.to_string(),
-        description: description.to_string(),
-        image_url: String::new(),
-    }
-}
-
-fn generate_feed_items(subscription: &Subscription, platform_type: &str) -> Vec<FeedItem> {
-    (1..=3u32)
-        .map(|i| FeedItem {
-            id: Uuid::new_v4().to_string(),
-            source_id: subscription.source_id.clone(),
-            subscription_id: subscription.id.clone(),
-            platform_type: platform_type.to_string(),
-            title: format!("{}: new post #{}", subscription.display_name, i),
-            description: format!(
-                "A new post from {}. Visit the original platform to read it.",
-                subscription.display_name
-            ),
-            url: format!(
-                "https://example.com/{}/{}",
-                platform_type, subscription.external_id
-            ),
-            image_url: subscription.image_url.clone(),
-            published_at: days_ago_ts(i as i64 * 3),
-        })
-        .collect()
-}
-
-fn build_catalog() -> HashMap<String, Vec<Subscribable>> {
-    let mut catalog = HashMap::new();
-
-    catalog.insert(
-        "youtube".to_string(),
-        vec![
-            subscribable("UCVHFbw7woebKtffS8kAoMDg", "Fireship", "High-intensity, entertaining coding tutorials and tech news."),
-            subscribable("UC_x5XG1OV2P6uZZ5FSM9Ttw", "Google Developers", "Official Google Developers channel — news, tutorials, and talks."),
-            subscribable("UCnUYZLuoy1rq1aVMwx4aTzw", "Theo - t3.gg", "Web dev, startup, and TypeScript content."),
-            subscribable("UCSJbGtTlrDami-tDGPe5bvA", "ThePrimeagen", "Vim, performance, and developer workflows."),
-            subscribable("UCddiUEpeqJcYeBxX1IVBKvQ", "Traversy Media", "Web development tutorials for all skill levels."),
-            subscribable("UCFbNIlppjAuEX4znoulh0Cw", "Web Dev Simplified", "Making web development simple and accessible."),
-            subscribable("UC8butISFwT-Wl7EV0hUK0BQ", "freeCodeCamp.org", "Free coding tutorials and full-length courses."),
-            subscribable("UCXuqSBlHAE6Xw-yeJA0Tunw", "Linus Tech Tips", "Technology news, reviews, and tutorials."),
-        ],
-    );
-
-    catalog.insert(
-        "podcast".to_string(),
-        vec![
-            subscribable("podcast-syntax-fm", "Syntax.fm", "A podcast for web developers with Wes Bos and Scott Tolinski."),
-            subscribable("podcast-changelog", "Changelog", "Conversations with the hackers, leaders, and innovators of software."),
-            subscribable("podcast-sed", "Software Engineering Daily", "Technical interviews about software topics."),
-            subscribable("podcast-darknet-diaries", "Darknet Diaries", "True stories from the dark side of the internet."),
-            subscribable("podcast-corecursive", "CoRecursive", "The stories behind the code."),
-            subscribable("podcast-lex-fridman", "Lex Fridman Podcast", "Conversations about AI, science, technology, and the human condition."),
-        ],
-    );
-
-    catalog
-}
-
 // ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
@@ -181,7 +117,6 @@ struct StoreState {
     sources: Vec<Source>,
     subscriptions: Vec<Subscription>,
     feed_items: Vec<FeedItem>,
-    catalog: HashMap<String, Vec<Subscribable>>,
 }
 
 #[derive(Clone)]
@@ -273,7 +208,6 @@ impl InMemoryStore {
                 sources,
                 subscriptions,
                 feed_items,
-                catalog: build_catalog(),
             })),
         }
     }
@@ -405,30 +339,6 @@ impl SubscriptionRepository for InMemoryStore {
             .collect();
         Ok(paginate(&filtered, offset, page_size))
     }
-
-    async fn get_subscribables(
-        &self,
-        platform_type: &str,
-        query: &str,
-    ) -> Result<Vec<Subscribable>, tonic::Status> {
-        let state = self.state.read().await;
-        let catalog = state
-            .catalog
-            .get(platform_type)
-            .map(|v| v.as_slice())
-            .unwrap_or(&[]);
-        let results = if query.is_empty() {
-            catalog.to_vec()
-        } else {
-            let q = query.to_lowercase();
-            catalog
-                .iter()
-                .filter(|s| s.display_name.to_lowercase().contains(&q))
-                .cloned()
-                .collect()
-        };
-        Ok(results)
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -436,12 +346,7 @@ impl SubscriptionRepository for InMemoryStore {
 // ---------------------------------------------------------------------------
 
 impl FeedRepository for InMemoryStore {
-    async fn seed_feed_items(
-        &self,
-        subscription: &Subscription,
-        platform_type: &str,
-    ) -> Result<(), tonic::Status> {
-        let items = generate_feed_items(subscription, platform_type);
+    async fn store_feed_items(&self, items: Vec<FeedItem>) -> Result<(), tonic::Status> {
         self.state.write().await.feed_items.extend(items);
         Ok(())
     }

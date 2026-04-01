@@ -1,14 +1,17 @@
 mod auth;
+mod content;
 mod error;
 mod logging;
 mod proto;
 mod services;
 mod store;
+mod youtube;
 
 use tonic::transport::Server;
 use tonic_health::server::health_reporter;
-use tracing::info;
+use tracing::{info, warn};
 
+use content::PlatformContentResolver;
 use logging::GrpcLoggingLayer;
 use proto::{
     feed_service_server::FeedServiceServer,
@@ -16,6 +19,7 @@ use proto::{
 };
 use services::{FeedServiceImpl, SubscriptionServiceImpl};
 use store::InMemoryStore;
+use youtube::YouTubeClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -49,10 +53,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set_service_status("", tonic_health::ServingStatus::Serving)
         .await;
 
+    let youtube_client = match std::env::var("YOUTUBE_API_KEY") {
+        Ok(key) if !key.is_empty() => {
+            info!("YouTube Data API integration enabled");
+            Some(YouTubeClient::new(key))
+        }
+        _ => {
+            warn!("YOUTUBE_API_KEY not set; YouTube search and feed fetching will return empty results");
+            None
+        }
+    };
+
+    let content = PlatformContentResolver::new(youtube_client);
     let store = InMemoryStore::new();
 
-    let subscription_svc =
-        SubscriptionServiceServer::new(SubscriptionServiceImpl { store: store.clone() });
+    let subscription_svc = SubscriptionServiceServer::new(SubscriptionServiceImpl {
+        store: store.clone(),
+        content,
+    });
     let feed_svc = FeedServiceServer::new(FeedServiceImpl { store });
 
     info!(%addr, "starting myfeed-api");

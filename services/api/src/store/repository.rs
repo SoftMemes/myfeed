@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use crate::proto::{FeedItem, Source, Subscribable, Subscription};
+use crate::proto::{FeedItem, Source, Subscription};
 
 /// Repository for platform source connections.
 pub trait SourceRepository {
@@ -51,23 +51,14 @@ pub trait SubscriptionRepository {
         page_size: usize,
         offset: usize,
     ) -> impl Future<Output = Result<(Vec<Subscription>, Option<String>), tonic::Status>> + Send;
-
-    /// Look up subscribable candidates from the mock catalog for a given platform type,
-    /// optionally filtered by a query string.
-    fn get_subscribables(
-        &self,
-        platform_type: &str,
-        query: &str,
-    ) -> impl Future<Output = Result<Vec<Subscribable>, tonic::Status>> + Send;
 }
 
 /// Repository for feed items.
 pub trait FeedRepository {
-    /// Generate and store mock feed items for a newly added subscription.
-    fn seed_feed_items(
+    /// Store pre-built feed items for a subscription.
+    fn store_feed_items(
         &self,
-        subscription: &Subscription,
-        platform_type: &str,
+        items: Vec<FeedItem>,
     ) -> impl Future<Output = Result<(), tonic::Status>> + Send;
 
     fn get_feed(

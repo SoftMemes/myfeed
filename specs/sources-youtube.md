@@ -1,7 +1,7 @@
 # Sources: YouTube Specification
 
 > **Version**: 2.0 (April 2026)
-> **Status**: Ready for Implementation
+> **Status**: Implemented
 > **Last Updated**: 2026-04-01
 
 ## Description
@@ -251,3 +251,21 @@ For the initial launch (low user count, no automatic refresh), the free tier is 
 - Verify end-to-end with a real API key against the YouTube Data API
 - Confirm feed items appear in the web client after subscribing to a real YouTube channel
 - Test with channels of varying sizes (small creator vs. large channel with frequent uploads)
+
+---
+
+## Implementation Notes
+
+**Implemented**: April 2026
+
+**Key Changes**:
+- `services/api/src/youtube.rs` — New: YouTube Data API v3 HTTP client (reqwest-based)
+- `services/api/src/content.rs` — New: `ContentResolver` trait + `PlatformContentResolver` impl
+- `services/api/src/store/repository.rs` — Removed `get_subscribables` from `SubscriptionRepository`; renamed `seed_feed_items` → `store_feed_items(Vec<FeedItem>)`
+- `services/api/src/store/in_memory.rs` — Removed catalog/mock-search logic; updated to implement `store_feed_items`
+- `services/api/src/services/subscription_service.rs` — Added `C: ContentResolver` generic; wired search and subscribe through `ContentResolver`
+- `services/api/src/main.rs` — Reads `YOUTUBE_API_KEY`, constructs `PlatformContentResolver`, injects into service
+- `services/Cargo.toml` + `services/api/Cargo.toml` — Added `reqwest`, `serde`, `serde_json`, `chrono`
+
+**Deviations from Spec**:
+- Missing `YOUTUBE_API_KEY` logs a warning and starts with empty YouTube results (rather than panic), to support local dev without an API key. Set the env var for real YouTube integration.
