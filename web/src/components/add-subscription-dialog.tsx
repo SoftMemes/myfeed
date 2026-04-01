@@ -147,7 +147,7 @@ export function AddSubscriptionDialog({ onSubscribed }: Props) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.imageUrl}
+                  src={item.imageUrl || undefined}
                   alt={item.displayName}
                   className="w-9 h-9 rounded-full bg-gray-100 shrink-0"
                 />

@@ -29,7 +29,7 @@ export function FeedItemCard({ item, publisherName }: Props) {
       <div className="aspect-video overflow-hidden bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={item.imageUrl}
+          src={item.imageUrl || undefined}
           alt={item.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"

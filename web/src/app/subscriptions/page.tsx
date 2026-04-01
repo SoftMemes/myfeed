@@ -81,7 +81,7 @@ export default function SubscriptionsPage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={sub.imageUrl}
+                      src={sub.imageUrl || undefined}
                       alt={sub.displayName}
                       className="w-10 h-10 rounded-full bg-gray-100 shrink-0"
                     />

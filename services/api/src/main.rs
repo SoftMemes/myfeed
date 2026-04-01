@@ -1,5 +1,6 @@
 mod auth;
 mod error;
+mod logging;
 mod proto;
 mod services;
 mod store;
@@ -8,6 +9,7 @@ use tonic::transport::Server;
 use tonic_health::server::health_reporter;
 use tracing::info;
 
+use logging::GrpcLoggingLayer;
 use proto::{
     feed_service_server::FeedServiceServer,
     subscription_service_server::SubscriptionServiceServer,
@@ -17,13 +19,23 @@ use store::InMemoryStore;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
-        )
-        .json()
-        .init();
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "info".into());
+
+    let use_json = std::env::var("LOG_FORMAT")
+        .map(|v| v.eq_ignore_ascii_case("json"))
+        .unwrap_or(false);
+
+    if use_json {
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .json()
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .init();
+    }
 
     let port: u16 = std::env::var("PORT")
         .ok()
@@ -46,6 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!(%addr, "starting myfeed-api");
 
     Server::builder()
+        .layer(GrpcLoggingLayer)
         .add_service(health_service)
         .add_service(subscription_svc)
         .add_service(feed_svc)
